@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useSocket } from './SocketContext.jsx';
-import { SERVER_EVENTS, CLIENT_EVENTS } from '../../../../shared/events.js';
+import { SERVER_EVENTS, CLIENT_EVENTS } from '../../../shared/events.js';
 
 const GameContext = createContext(null);
 
