@@ -26,9 +26,9 @@ export class Room {
       // Für Bots: socketId ist null, verwende bot-{userId} als Key
       const botSocketId = `bot-${userId}`;
       this.players.set(botSocketId, { userId, username, isBot: true });
-      console.log(`🤖 [ROOM] Adding bot: ${username}`);
+      console.log(`🤖 [BOT] Adding bot: ${username}`);
       this.botManager.addBotToGame(this.gameEngine, username);
-      console.log(`✅ [ROOM] Bot added. GameEngine players:`, this.gameEngine.players.length);
+      console.log(`🤖 [BOT] ${username} added (${this.gameEngine.players.length}/4)`);
     } else {
       this.players.set(socketId, { userId, username, isBot: false });
       console.log(`👤 [ROOM] Adding human player: ${username}`);

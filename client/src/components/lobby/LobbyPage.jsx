@@ -9,7 +9,7 @@ import { QuickMatch } from './QuickMatch.jsx';
  */
 export function LobbyPage() {
   const { socket, connected } = useSocket();
-  const { roomId, quickMatch, joinRoom } = useGame();
+  const { roomId, quickMatch, joinRoom, currentPlayerId } = useGame();
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(false);
   const [username, setUsername] = useState(() => {
@@ -56,6 +56,10 @@ export function LobbyPage() {
 
     const userId = 'user-' + Math.random().toString(36).substr(2, 9);
     console.log('📝 [CLIENT] Creating room with bots:', { userId, username, roomName: roomName.trim() });
+    
+    // Setze currentPlayerId sofort (wird auch in GameContext gesetzt, aber sicherstellen)
+    // Das wird in GameContext durch ROOM_JOINED Event gesetzt
+    
     socket.emit('create-room', {
       userId,
       username,

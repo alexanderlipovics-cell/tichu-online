@@ -217,6 +217,7 @@ export class GameEngine {
    * Gibt Game State zurück (für Client)
    */
   getGameState(forPlayerId = null) {
+    console.log('📊 [GAMEENGINE] getGameState() called for player:', forPlayerId);
     const baseState = {
       roomId: this.roomId,
       state: this.state,
@@ -224,15 +225,25 @@ export class GameEngine {
       players: this.players.map(p => {
         // Zeige Hand nur für eigenen Spieler
         if (forPlayerId && p.id === forPlayerId) {
-          return p.toJSON();
+          const playerJSON = p.toJSON();
+          console.log(`📊 [GAMEENGINE] Player ${p.username} (${p.id}): ${p.hand.length} cards in hand`);
+          return playerJSON;
         }
-        return p.toPublicJSON();
+        const publicJSON = p.toPublicJSON();
+        console.log(`📊 [GAMEENGINE] Player ${p.username} (${p.id}): ${p.hand.length} cards (hidden)`);
+        return publicJSON;
       })
     };
 
     if (this.currentRound) {
       baseState.round = this.currentRound.toJSON();
     }
+
+    console.log('📊 [GAMEENGINE] Game state prepared:', {
+      state: baseState.state,
+      players: baseState.players.length,
+      myHandSize: forPlayerId ? baseState.players.find(p => p.id === forPlayerId)?.hand?.length : 0
+    });
 
     return baseState;
   }

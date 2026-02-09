@@ -52,6 +52,11 @@ export function GameProvider({ children }) {
     socket.on(SERVER_EVENTS.ROOM_JOINED, (data) => {
       console.log('🚪 [CLIENT] ROOM_JOINED:', data);
       setRoomId(data.roomId);
+      // currentPlayerId sollte bereits gesetzt sein, aber sicherstellen
+      if (data.userId) {
+        setCurrentPlayerId(data.userId);
+        console.log('✅ [CLIENT] Current player ID set:', data.userId);
+      }
       if (data.room) {
         setGameState(data.room);
       }

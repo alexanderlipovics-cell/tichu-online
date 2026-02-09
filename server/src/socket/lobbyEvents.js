@@ -71,9 +71,10 @@ export class LobbyEventsHandler {
       // Sende Bestätigung
       socket.emit(SERVER_EVENTS.ROOM_JOINED, {
         roomId,
+        userId: userId, // Wichtig: userId mit senden
         room: room.toLobbyJSON()
       });
-      console.log('📤 [JOIN-ROOM] ROOM_JOINED event sent');
+      console.log('📤 [JOIN-ROOM] ROOM_JOINED event sent with userId:', userId);
 
       // Broadcast an andere Spieler
       socket.to(roomId).emit(SERVER_EVENTS.PLAYER_JOINED, {
@@ -197,9 +198,10 @@ export class LobbyEventsHandler {
 
       socket.emit(SERVER_EVENTS.ROOM_JOINED, {
         roomId: room.id,
+        userId: userId, // Wichtig: userId mit senden
         room: room.toLobbyJSON()
       });
-      console.log('📤 [CREATE-ROOM] ROOM_JOINED event sent to client');
+      console.log('📤 [CREATE-ROOM] ROOM_JOINED event sent to client with userId:', userId);
 
       // Wenn 4 Spieler: Starte Spiel automatisch
       if (room.getPlayerCount() === 4) {
