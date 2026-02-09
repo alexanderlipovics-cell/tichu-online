@@ -1,4 +1,5 @@
 import { CLIENT_EVENTS, SERVER_EVENTS } from '../../../shared/events.js';
+import { BotPlayer } from '../../game/BotPlayer.js';
 
 /**
  * Lobby Events Handler - Verwaltet Lobby & Room Management
@@ -96,37 +97,20 @@ export class LobbyEventsHandler {
   }
 
   handleLeaveRoom(socket) {
-    try {
-      const roomId = socket.data.roomId;
-      if (!roomId) {
-        return;
-      }
+    if (!socket.data.roomId) return;
 
-      const room = this.roomManager.getRoom(roomId);
-      if (room) {
-        const userId = socket.data.userId;
-        room.removePlayer(socket.id);
-
-        socket.leave(roomId);
-        socket.data.roomId = null;
-        socket.data.userId = null;
-
-        socket.emit(SERVER_EVENTS.ROOM_LEFT, { roomId });
-
-        // Broadcast an andere Spieler
-        socket.to(roomId).emit(SERVER_EVENTS.PLAYER_LEFT, {
-          userId,
-          playerCount: room.getPlayerCount()
-        });
-
-        // Wenn Raum leer: entferne ihn
-        if (room.isEmpty()) {
-          this.roomManager.removeRoom(roomId);
-        }
-      }
-    } catch (error) {
-      socket.emit(SERVER_EVENTS.ERROR, { message: error.message });
+    const room = this.roomManager.getRoom(socket.data.roomId);
+    if (room) {
+      room.removePlayer(socket.id);
+      socket.to(socket.data.roomId).emit(SERVER_EVENTS.PLAYER_LEFT, {
+        userId: socket.data.userId,
+        playerCount: room.getPlayerCount()
+      });
     }
+
+    socket.leave(socket.data.roomId);
+    socket.data.roomId = null;
+    socket.emit(SERVER_EVENTS.ROOM_LEFT);
   }
 
   handleQuickMatch(socket, { userId, username }) {
@@ -144,6 +128,7 @@ export class LobbyEventsHandler {
 
         socket.emit(SERVER_EVENTS.ROOM_JOINED, {
           roomId: result.room.id,
+          userId: userId,
           room: result.room.toLobbyJSON()
         });
         console.log('📤 [QUICK-MATCH] ROOM_JOINED sent');
@@ -220,28 +205,40 @@ export class LobbyEventsHandler {
   async startGameForRoom(room) {
     try {
       console.log('🎮 [START-GAME] Starting game for room:', room.id);
+      console.log('🎮 [START-GAME] GameEngine players:', room.gameEngine.players.length);
+      console.log('🎮 [START-GAME] GameEngine state:', room.gameEngine.state);
       
       // GameEngine sollte bereits gestartet sein wenn 4 Spieler da sind
       // Aber sicherstellen dass es gestartet ist
       if (room.gameEngine.state === 'WAITING_FOR_PLAYERS' && room.gameEngine.players.length === 4) {
+        console.log('🎮 [START-GAME] Starting GameEngine...');
         room.gameEngine.startGame();
         console.log('✅ [START-GAME] GameEngine started. State:', room.gameEngine.state);
+        console.log('✅ [START-GAME] Round created:', !!room.gameEngine.currentRound);
+        
+        // Log alle Spieler-Hände
+        room.gameEngine.players.forEach((p, idx) => {
+          console.log(`🃏 [DEAL] Player ${idx} (${p.username}): ${p.hand.length} cards`);
+        });
       }
 
       // Warte kurz damit Round initialisiert ist
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 200));
 
       // Broadcast Game State an alle
+      console.log('📤 [START-GAME] Broadcasting game state...');
       this.broadcastGameState(room);
-      console.log('📤 [START-GAME] Game state broadcasted to all players');
+      console.log('✅ [START-GAME] Game state broadcasted to all players');
 
       // Handle Bot Actions (Grand Tichu, etc.)
       setTimeout(async () => {
+        console.log('🤖 [START-GAME] Handling bot actions...');
         await room.handleBotActions();
         this.broadcastGameState(room);
       }, 500);
     } catch (error) {
       console.error('❌ [START-GAME] Error:', error);
+      console.error(error.stack);
     }
   }
 
@@ -250,35 +247,37 @@ export class LobbyEventsHandler {
    */
   broadcastGameState(room) {
     console.log('📤 [BROADCAST] Broadcasting game state to all players');
+    console.log('📤 [BROADCAST] Room has', room.players.size, 'players');
+    
     room.players.forEach((info, socketId) => {
       if (!info.isBot && socketId) {
+        console.log(`📤 [BROADCAST] Preparing state for ${info.username} (${info.userId})`);
         const gameState = room.gameEngine.getGameState(info.userId);
-        console.log(`📤 [BROADCAST] Sending to ${info.username} (${socketId}):`, {
+        
+        const myPlayer = gameState.players?.find(p => p.id === info.userId);
+        const myHandSize = myPlayer?.hand?.length || 0;
+        
+        console.log(`📤 [SEND] Sending game state to ${info.username} (${socketId}):`, {
           state: gameState.state,
           roundNumber: gameState.roundNumber,
           players: gameState.players?.length,
-          currentPlayer: gameState.round?.currentPlayerIndex
+          currentPlayer: gameState.round?.currentPlayerIndex,
+          myHandSize: myHandSize
         });
+        
         this.io.to(socketId).emit(SERVER_EVENTS.GAME_STATE, gameState);
+        
+        // Emit cards-dealt event wenn Karten vorhanden
+        const player = room.gameEngine.players.find(p => p.id === info.userId);
+        if (player && player.hand && player.hand.length > 0) {
+          console.log(`📤 [SEND] Sending CARDS_DEALT to ${info.username}:`, player.hand.length, 'cards');
+          this.io.to(socketId).emit(SERVER_EVENTS.CARDS_DEALT, {
+            playerId: info.userId,
+            hand: player.hand.map(c => c.toJSON()),
+            roundNumber: room.gameEngine.roundNumber
+          });
+        }
       }
     });
-    
-    // Emit cards-dealt event wenn Karten ausgeteilt wurden
-    if (room.gameEngine.currentRound && room.gameEngine.currentRound.first8Dealt) {
-      console.log('📤 [BROADCAST] Emitting CARDS_DEALT event');
-      room.players.forEach((info, socketId) => {
-        if (!info.isBot && socketId) {
-          const player = room.gameEngine.players.find(p => p.id === info.userId);
-          if (player) {
-            this.io.to(socketId).emit(SERVER_EVENTS.CARDS_DEALT, {
-              playerId: info.userId,
-              hand: player.hand.map(c => c.toJSON()),
-              roundNumber: room.gameEngine.roundNumber
-            });
-          }
-        }
-      });
-    }
   }
 }
-
