@@ -57,19 +57,24 @@ export class Round {
    * Teilt erste 8 Karten aus
    */
   dealFirst8() {
+    console.log('🃏 [ROUND] dealFirst8() called');
     if (this.state !== GAME_STATES.DEALING_FIRST_8) {
       throw new Error('Falscher State für First 8 Deal');
     }
 
     this.deck.shuffle();
+    console.log('✅ [ROUND] Deck shuffled');
     const hands = this.deck.deal(CONSTANTS.FIRST_DEAL, 4);
+    console.log('✅ [ROUND] First 8 cards dealt to 4 players');
 
     hands.forEach((hand, index) => {
       this.players[index].addCards(hand);
+      console.log(`✅ [ROUND] Player ${index} (${this.players[index].username}) got ${hand.length} cards`);
     });
 
     this.first8Dealt = true;
     this.state = GAME_STATES.DEALING_REMAINING_6;
+    console.log('✅ [ROUND] First 8 dealt. New state:', this.state);
   }
 
   /**

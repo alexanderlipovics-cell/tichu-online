@@ -55,11 +55,13 @@ export function LobbyPage() {
     }
 
     const userId = 'user-' + Math.random().toString(36).substr(2, 9);
+    console.log('📝 [CLIENT] Creating room with bots:', { userId, username, roomName: roomName.trim() });
     socket.emit('create-room', {
       userId,
       username,
       roomName: roomName.trim(),
-      isPrivate: false
+      isPrivate: false,
+      addBots: true // Automatisch 3 Bots hinzufügen
     });
   };
 

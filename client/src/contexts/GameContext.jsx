@@ -16,13 +16,41 @@ export function GameProvider({ children }) {
 
     // Game State Updates
     socket.on(SERVER_EVENTS.GAME_STATE, (state) => {
-      console.log('📊 Game State Update:', state);
+      console.log('📊 [CLIENT] GAME_STATE received:', {
+        state: state.state,
+        roundNumber: state.roundNumber,
+        players: state.players?.length,
+        currentPlayer: state.round?.currentPlayerIndex
+      });
       setGameState(state);
+    });
+
+    // Cards Dealt
+    socket.on(SERVER_EVENTS.CARDS_DEALT, (data) => {
+      console.log('🃏 [CLIENT] CARDS_DEALT received:', {
+        playerId: data.playerId,
+        handSize: data.hand?.length,
+        roundNumber: data.roundNumber
+      });
+      // Update game state with new hand
+      setGameState(prev => {
+        if (!prev) return prev;
+        const updated = { ...prev };
+        if (updated.players) {
+          updated.players = updated.players.map(p => {
+            if (p.id === data.playerId) {
+              return { ...p, hand: data.hand };
+            }
+            return p;
+          });
+        }
+        return updated;
+      });
     });
 
     // Room Events
     socket.on(SERVER_EVENTS.ROOM_JOINED, (data) => {
-      console.log('🚪 Room Joined:', data);
+      console.log('🚪 [CLIENT] ROOM_JOINED:', data);
       setRoomId(data.roomId);
       if (data.room) {
         setGameState(data.room);

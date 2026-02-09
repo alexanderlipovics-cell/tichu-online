@@ -134,9 +134,12 @@ export class GameEventsHandler {
   }
 
   handlePlayCards(socket, { cardIds }) {
+    console.log('🎴 [PLAY-CARDS] Event received:', { userId: socket.data.userId, cardIds });
     try {
       const { room, userId } = this.getRoomAndUser(socket);
+      console.log('✅ [PLAY-CARDS] Room and user found');
       const result = room.gameEngine.playCards(userId, cardIds);
+      console.log('✅ [PLAY-CARDS] Cards played. Result:', result);
       
       this.broadcastToRoom(room, SERVER_EVENTS.PLAYER_PLAYED, {
         playerId: userId,
@@ -151,14 +154,18 @@ export class GameEventsHandler {
 
       this.broadcastGameState(room);
     } catch (error) {
+      console.error('❌ [PLAY-CARDS] Error:', error);
       this.sendError(socket, error.message);
     }
   }
 
   handlePass(socket) {
+    console.log('⏭️ [PASS] Event received:', { userId: socket.data.userId });
     try {
       const { room, userId } = this.getRoomAndUser(socket);
+      console.log('✅ [PASS] Room and user found');
       const result = room.gameEngine.pass(userId);
+      console.log('✅ [PASS] Passed. Result:', result);
       
       this.broadcastToRoom(room, SERVER_EVENTS.PLAYER_PASSED, {
         playerId: userId
@@ -172,6 +179,7 @@ export class GameEventsHandler {
 
       this.broadcastGameState(room);
     } catch (error) {
+      console.error('❌ [PASS] Error:', error);
       this.sendError(socket, error.message);
     }
   }
@@ -212,9 +220,30 @@ export class GameEventsHandler {
    * Broadcastet Game State an alle im Raum
    */
   broadcastGameState(room) {
+    console.log('📤 [BROADCAST] broadcastGameState() called');
     room.players.forEach((info, socketId) => {
-      const gameState = room.gameEngine.getGameState(info.userId);
-      this.io.to(socketId).emit(SERVER_EVENTS.GAME_STATE, gameState);
+      if (!info.isBot && socketId) {
+        const gameState = room.gameEngine.getGameState(info.userId);
+        console.log(`📤 [BROADCAST] Sending GAME_STATE to ${info.username} (${socketId}):`, {
+          state: gameState.state,
+          roundNumber: gameState.roundNumber,
+          players: gameState.players?.length,
+          currentPlayer: gameState.round?.currentPlayerIndex,
+          handSize: gameState.players?.find(p => p.id === info.userId)?.hand?.length
+        });
+        this.io.to(socketId).emit(SERVER_EVENTS.GAME_STATE, gameState);
+        
+        // Emit cards-dealt wenn Karten vorhanden
+        const player = room.gameEngine.players.find(p => p.id === info.userId);
+        if (player && player.hand && player.hand.length > 0) {
+          console.log(`📤 [BROADCAST] Sending CARDS_DEALT to ${info.username}:`, player.hand.length, 'cards');
+          this.io.to(socketId).emit(SERVER_EVENTS.CARDS_DEALT, {
+            playerId: info.userId,
+            hand: player.hand.map(c => c.toJSON()),
+            roundNumber: room.gameEngine.roundNumber
+          });
+        }
+      }
     });
 
     // Prüfe ob Bot am Zug ist und führe Aktion aus
@@ -225,17 +254,21 @@ export class GameEventsHandler {
    * Behandelt Bot-Zug (asynchron)
    */
   async handleBotTurn(room) {
+    console.log('🤖 [BOT-TURN] Checking for bot turn...');
     // Warte kurz damit State aktualisiert ist
     setTimeout(async () => {
       try {
         await room.handleBotActions();
+        console.log('✅ [BOT-TURN] Bot actions handled');
         // Broadcast State nach Bot-Aktion
         room.players.forEach((info, socketId) => {
-          const gameState = room.gameEngine.getGameState(info.userId);
-          this.io.to(socketId).emit(SERVER_EVENTS.GAME_STATE, gameState);
+          if (!info.isBot && socketId) {
+            const gameState = room.gameEngine.getGameState(info.userId);
+            this.io.to(socketId).emit(SERVER_EVENTS.GAME_STATE, gameState);
+          }
         });
       } catch (error) {
-        console.error('Bot Turn Error:', error);
+        console.error('❌ [BOT-TURN] Error:', error);
       }
     }, 500);
   }

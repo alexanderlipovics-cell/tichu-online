@@ -57,6 +57,7 @@ export class GameEngine {
    * Startet das Spiel
    */
   startGame() {
+    console.log('🎮 [GAMEENGINE] startGame() called. Players:', this.players.length);
     if (this.players.length !== 4) {
       throw new Error('Nicht genug Spieler');
     }
@@ -64,6 +65,7 @@ export class GameEngine {
     this.state = GAME_STATES.DEALING_FIRST_8;
     this.gameStartTime = Date.now();
     this.roundNumber = 1;
+    console.log('✅ [GAMEENGINE] Game started. State:', this.state, 'Round:', this.roundNumber);
     this.startNewRound();
   }
 
@@ -71,14 +73,20 @@ export class GameEngine {
    * Startet eine neue Runde
    */
   startNewRound() {
+    console.log('🔄 [GAMEENGINE] startNewRound() called. Round:', this.roundNumber);
     // Reset Spieler für neue Runde
     this.players.forEach(player => {
       player.resetForNewRound();
     });
 
     this.currentRound = new Round(this.players, this.roundNumber);
+    console.log('✅ [GAMEENGINE] Round created');
     this.currentRound.dealFirst8();
+    console.log('✅ [GAMEENGINE] First 8 cards dealt. Players hands:', 
+      this.players.map(p => ({ id: p.id, handSize: p.hand.length }))
+    );
     this.state = this.currentRound.state;
+    console.log('✅ [GAMEENGINE] Round state:', this.state);
   }
 
   /**
