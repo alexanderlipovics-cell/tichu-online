@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useGame } from '../../contexts/GameContext.jsx';
-import { GAME_STATES } from '../../../shared/gameStates.js';
+import { GAME_STATES } from '../../shared/gameStates.js';
 import { PlayerHand } from './PlayerHand.jsx';
 import { PlayArea } from './PlayArea.jsx';
 import { ActionBar } from './ActionBar.jsx';
