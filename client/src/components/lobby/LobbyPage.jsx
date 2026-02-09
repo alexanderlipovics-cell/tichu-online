@@ -65,7 +65,7 @@ export function LobbyPage() {
       username,
       roomName: roomName.trim(),
       isPrivate: false,
-      addBots: true // Automatisch 3 Bots hinzufügen
+      addBots: true // IMMER true - 3 Bots werden automatisch hinzugefügt
     });
   };
 
