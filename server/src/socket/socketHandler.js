@@ -1,6 +1,7 @@
 import { GameEventsHandler } from './gameEvents.js';
 import { LobbyEventsHandler } from './lobbyEvents.js';
 import { ChatEventsHandler } from './chatEvents.js';
+import { BotEventsHandler } from './botEvents.js';
 
 /**
  * Socket Handler - Hauptklasse für alle Socket.IO Events
@@ -14,6 +15,7 @@ export class SocketHandler {
     this.gameEvents = new GameEventsHandler(io, roomManager);
     this.lobbyEvents = new LobbyEventsHandler(io, roomManager);
     this.chatEvents = new ChatEventsHandler(io, roomManager);
+    this.botEvents = new BotEventsHandler(io, roomManager);
   }
 
   /**
@@ -33,6 +35,7 @@ export class SocketHandler {
     this.lobbyEvents.register(socket);
     this.gameEvents.register(socket);
     this.chatEvents.register(socket);
+    this.botEvents.register(socket);
 
     // Disconnect Handler
     socket.on('disconnect', () => {

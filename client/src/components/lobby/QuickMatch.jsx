@@ -5,7 +5,7 @@ import { useGame } from '../../contexts/GameContext.jsx';
 /**
  * QuickMatch - Schnelles Matchmaking
  */
-export function QuickMatch() {
+export function QuickMatch({ username }) {
   const { socket, connected } = useSocket();
   const { quickMatch } = useGame();
   const [matching, setMatching] = useState(false);
@@ -31,11 +31,9 @@ export function QuickMatch() {
   }, [socket]);
 
   const handleQuickMatch = () => {
-    if (!connected || matching) return;
+    if (!connected || matching || !username) return;
 
     const userId = 'user-' + Math.random().toString(36).substr(2, 9);
-    const username = 'Player ' + userId.substr(-4);
-
     setMatching(true);
     quickMatch(userId, username);
   };
@@ -64,11 +62,11 @@ export function QuickMatch() {
       ) : (
         <button
           onClick={handleQuickMatch}
-          disabled={!connected}
+          disabled={!connected || !username}
           className={`
             px-8 py-4 text-xl font-bold rounded-lg
             transition-all duration-200
-            ${connected
+            ${connected && username
               ? 'bg-green-600 hover:bg-green-700 text-white active:scale-95'
               : 'bg-gray-600 text-gray-300 cursor-not-allowed'
             }

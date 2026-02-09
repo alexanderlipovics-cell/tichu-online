@@ -154,9 +154,9 @@ export class LobbyEventsHandler {
     socket.emit('room-list', { rooms });
   }
 
-  handleCreateRoom(socket, { userId, username, isPrivate = false }) {
+  handleCreateRoom(socket, { userId, username, isPrivate = false, roomName = null }) {
     try {
-      const room = this.roomManager.createRoom(isPrivate, userId);
+      const room = this.roomManager.createRoom(isPrivate, userId, roomName);
       
       socket.data.roomId = room.id;
       socket.data.userId = userId;

@@ -13,9 +13,9 @@ export class RoomManager {
   /**
    * Erstellt einen neuen Raum
    */
-  createRoom(isPrivate = false, hostId = null) {
+  createRoom(isPrivate = false, hostId = null, roomName = null) {
     const roomId = this.generateRoomId();
-    const room = new Room(roomId, isPrivate, hostId);
+    const room = new Room(roomId, isPrivate, hostId, roomName);
     this.rooms.set(roomId, room);
     return room;
   }

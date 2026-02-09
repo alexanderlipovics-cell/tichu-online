@@ -4,16 +4,14 @@ import { useGame } from '../../contexts/GameContext.jsx';
 /**
  * RoomList - Liste verfügbarer Räume
  */
-export function RoomList({ rooms = [] }) {
+export function RoomList({ rooms = [], username }) {
   const { socket } = useSocket();
   const { joinRoom } = useGame();
 
   const handleJoinRoom = (roomId) => {
-    if (!socket) return;
+    if (!socket || !username) return;
 
     const userId = 'user-' + Math.random().toString(36).substr(2, 9);
-    const username = 'Player ' + userId.substr(-4);
-    
     joinRoom(roomId, userId, username);
   };
 
@@ -45,8 +43,8 @@ export function RoomList({ rooms = [] }) {
           </div>
           
           <div className="text-gray-300 text-sm mb-4">
-            <p>Raum-ID: {room.id.substr(0, 8)}...</p>
-            <p>Erstellt: {new Date(room.createdAt).toLocaleTimeString()}</p>
+            <p className="font-bold text-white">{room.name || `Raum ${room.id.substr(-6)}`}</p>
+            <p className="text-xs text-gray-400">Erstellt: {new Date(room.createdAt).toLocaleTimeString()}</p>
           </div>
 
           <button

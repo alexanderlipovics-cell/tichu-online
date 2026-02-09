@@ -216,6 +216,28 @@ export class GameEventsHandler {
       const gameState = room.gameEngine.getGameState(info.userId);
       this.io.to(socketId).emit(SERVER_EVENTS.GAME_STATE, gameState);
     });
+
+    // Prüfe ob Bot am Zug ist und führe Aktion aus
+    this.handleBotTurn(room);
+  }
+
+  /**
+   * Behandelt Bot-Zug (asynchron)
+   */
+  async handleBotTurn(room) {
+    // Warte kurz damit State aktualisiert ist
+    setTimeout(async () => {
+      try {
+        await room.handleBotActions();
+        // Broadcast State nach Bot-Aktion
+        room.players.forEach((info, socketId) => {
+          const gameState = room.gameEngine.getGameState(info.userId);
+          this.io.to(socketId).emit(SERVER_EVENTS.GAME_STATE, gameState);
+        });
+      } catch (error) {
+        console.error('Bot Turn Error:', error);
+      }
+    }, 500);
   }
 }
 
