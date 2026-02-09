@@ -1,5 +1,5 @@
 import { CLIENT_EVENTS, SERVER_EVENTS } from '../../../shared/events.js';
-import { BotPlayer } from '../../game/BotPlayer.js';
+import { BotPlayer } from '../game/BotPlayer.js';
 
 /**
  * Lobby Events Handler - Verwaltet Lobby & Room Management
